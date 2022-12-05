@@ -177,6 +177,32 @@ class BayesNet:
         else:
             return cpt
 
+    @staticmethod
+    def reduce_factor_rem_row(instantiation: pd.Series, cpt: pd.DataFrame) -> pd.DataFrame:
+        """
+        Creates and returns a new factor in which all probabilities which are incompatible with the instantiation
+        passed to the method to 0.
+
+        :param instantiation: a series of assignments as tuples. E.g.: pd.Series({"A": True, "B": False})
+        :param cpt: cpt to be reduced
+        :return: cpt with their original probability value and zero probability for incompatible instantiations
+        """
+        var_names = instantiation.index.values
+        var_names = [v for v in var_names if v in cpt.columns]  # get rid of excess variables names
+        if len(var_names) > 0:  # only reduce the factor if the evidence appears in it
+            new_cpt = deepcopy(cpt)
+            incompat_indices = cpt[var_names] != instantiation[var_names].values
+            incompat_indices = [any(x[1]) for x in incompat_indices.iterrows()]
+            for i, _ in enumerate(incompat_indices):
+                if incompat_indices[i] == True:
+                    incompat_indices[i] = False
+                else:
+                    incompat_indices[i] = True
+            new_cpt = new_cpt[incompat_indices]
+            return new_cpt
+        else:
+            return cpt
+
     def draw_structure(self) -> None:
         """
         Visualize structure of the BN.
