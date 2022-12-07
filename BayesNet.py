@@ -9,16 +9,20 @@ from copy import deepcopy
 
 
 class BayesNet:
-
     def __init__(self) -> None:
         # initialize graph structure
         self.structure = nx.DiGraph()
 
     # LOADING FUNCTIONS ------------------------------------------------------------------------------------------------
-    def create_bn(self, variables: List[str], edges: List[Tuple[str, str]], cpts: Dict[str, pd.DataFrame]) -> None:
+    def create_bn(
+        self,
+        variables: List[str],
+        edges: List[Tuple[str, str]],
+        cpts: Dict[str, pd.DataFrame],
+    ) -> None:
         """
         Creates the BN according to the python objects passed in.
-        
+
         :param variables: List of names of the variables.
         :param edges: List of the directed edges.
         :param cpts: Dictionary of conditional probability tables.
@@ -31,7 +35,7 @@ class BayesNet:
 
         # check for cycles
         if not nx.is_directed_acyclic_graph(self.structure):
-            raise Exception('The provided graph is not acyclic.')
+            raise Exception("The provided graph is not acyclic.")
 
     def load_from_bifxml(self, file_path: str) -> None:
         """
@@ -64,12 +68,12 @@ class BayesNet:
             columns = bif_reader.get_parents()[key]
             columns.reverse()
             columns.append(key)
-            columns.append('p')
+            columns.append("p")
             cpts[key] = pd.DataFrame(cpt, columns=columns)
-        
+
         # load vars
         variables = bif_reader.get_variables()
-        
+
         # load edges
         edges = bif_reader.get_edges()
 
@@ -92,9 +96,9 @@ class BayesNet:
         :return: Conditional probability table of 'variable' as a pandas DataFrame.
         """
         try:
-            return self.structure.nodes[variable]['cpt']
+            return self.structure.nodes[variable]["cpt"]
         except KeyError:
-            raise Exception('Variable not in the BN')
+            raise Exception("Variable not in the BN")
 
     def get_all_variables(self) -> List[str]:
         """
@@ -126,14 +130,16 @@ class BayesNet:
         # connect all variables with an edge which are mentioned in a CPT together
         for var in self.get_all_variables():
             involved_vars = list(self.get_cpt(var).columns)[:-1]
-            for i in range(len(involved_vars)-1):
-                for j in range(i+1, len(involved_vars)):
+            for i in range(len(involved_vars) - 1):
+                for j in range(i + 1, len(involved_vars)):
                     if not int_graph.has_edge(involved_vars[i], involved_vars[j]):
                         int_graph.add_edge(involved_vars[i], involved_vars[j])
         return int_graph
 
     @staticmethod
-    def get_compatible_instantiations_table(instantiation: pd.Series, cpt: pd.DataFrame):
+    def get_compatible_instantiations_table(
+        instantiation: pd.Series, cpt: pd.DataFrame
+    ):
         """
         Get all the entries of a CPT which are compatible with the instantiation.
 
@@ -142,7 +148,9 @@ class BayesNet:
         :return: table with compatible instantiations and their probability value
         """
         var_names = instantiation.index.values
-        var_names = [v for v in var_names if v in cpt.columns]  # get rid of excess variables names
+        var_names = [
+            v for v in var_names if v in cpt.columns
+        ]  # get rid of excess variables names
         compat_indices = cpt[var_names] == instantiation[var_names].values
         compat_indices = [all(x[1]) for x in compat_indices.iterrows()]
         compat_instances = cpt.loc[compat_indices]
@@ -167,18 +175,22 @@ class BayesNet:
         :return: cpt with their original probability value and zero probability for incompatible instantiations
         """
         var_names = instantiation.index.values
-        var_names = [v for v in var_names if v in cpt.columns]  # get rid of excess variables names
+        var_names = [
+            v for v in var_names if v in cpt.columns
+        ]  # get rid of excess variables names
         if len(var_names) > 0:  # only reduce the factor if the evidence appears in it
             new_cpt = deepcopy(cpt)
             incompat_indices = cpt[var_names] != instantiation[var_names].values
             incompat_indices = [any(x[1]) for x in incompat_indices.iterrows()]
-            new_cpt.loc[incompat_indices, 'p'] = 0.0
+            new_cpt.loc[incompat_indices, "p"] = 0.0
             return new_cpt
         else:
             return cpt
 
     @staticmethod
-    def reduce_factor_rem_row(instantiation: pd.Series, cpt: pd.DataFrame) -> pd.DataFrame:
+    def reduce_factor_rem_row(
+        instantiation: pd.Series, cpt: pd.DataFrame
+    ) -> pd.DataFrame:
         """
         Creates and returns a new factor in which all probabilities which are incompatible with the instantiation
         passed to the method to 0.
@@ -188,17 +200,14 @@ class BayesNet:
         :return: cpt with their original probability value and zero probability for incompatible instantiations
         """
         var_names = instantiation.index.values
-        var_names = [v for v in var_names if v in cpt.columns]  # get rid of excess variables names
+        var_names = [
+            v for v in var_names if v in cpt.columns
+        ]  # get rid of excess variables names
         if len(var_names) > 0:  # only reduce the factor if the evidence appears in it
             new_cpt = deepcopy(cpt)
-            incompat_indices = cpt[var_names] != instantiation[var_names].values
-            incompat_indices = [any(x[1]) for x in incompat_indices.iterrows()]
-            for i, _ in enumerate(incompat_indices):
-                if incompat_indices[i] == True:
-                    incompat_indices[i] = False
-                else:
-                    incompat_indices[i] = True
-            new_cpt = new_cpt[incompat_indices]
+            compat_indices = cpt[var_names] == instantiation[var_names].values
+            compat_indices = [any(x[1]) for x in compat_indices.iterrows()]
+            new_cpt = new_cpt[compat_indices]
             return new_cpt
         else:
             return cpt
@@ -219,7 +228,7 @@ class BayesNet:
         :param cpt: conditional probability table of the variable.
         """
         if variable in self.structure.nodes:
-            raise Exception('Variable already exists.')
+            raise Exception("Variable already exists.")
         else:
             self.structure.add_node(variable, cpt=cpt)
 
@@ -230,14 +239,14 @@ class BayesNet:
         :raises Exception: If added edge introduces a cycle in the structure.
         """
         if edge in self.structure.edges:
-            raise Exception('Edge already exists.')
+            raise Exception("Edge already exists.")
         else:
             self.structure.add_edge(edge[0], edge[1])
 
         # check for cycles
         if not nx.is_directed_acyclic_graph(self.structure):
             self.structure.remove_edge(edge[0], edge[1])
-            raise ValueError('Edge would make graph cyclic.')
+            raise ValueError("Edge would make graph cyclic.")
 
     def del_var(self, variable: str) -> None:
         """

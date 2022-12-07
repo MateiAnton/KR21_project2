@@ -32,9 +32,7 @@ class BNReasoner:
                 if child in e:
                     del e_without_factor[child]
                 cpt = self.bn.reduce_factor_rem_row(pd.Series(e_without_factor), cpt)
-                print(cpt)
                 cpt = cpt.drop(columns=[var])
-                # cpt = cpt[cpt['p'] != 0]
                 self.bn.update_cpt(child, cpt)
 
         self._prune_leafs_rec(list(set(vars).union(set(e.keys()))))
@@ -83,3 +81,41 @@ class BNReasoner:
             ):
                 return False
         return True
+
+    def multiply_factors(
+        self, factor1: pd.DataFrame, factor2: pd.DataFrame
+    ) -> pd.DataFrame:
+        """
+        Multiplies two factors and returns the resulting factor.
+        """
+        merged = pd.merge(
+            factor1.drop(columns=["p"]), factor2.drop(columns=["p"]), how="outer"
+        )
+        columns1 = factor1.columns.values[:-1]
+        columns2 = factor2.columns.values[:-1]
+        ps = []
+        for _, row in merged.iterrows():
+            current_col_values1 = row[columns1]
+            current_col_values2 = row[columns2]
+
+            p1 = list(
+                factor1.loc[
+                    (
+                        factor1[list(current_col_values1.to_dict())]
+                        == current_col_values1
+                    ).all(axis=1)
+                ]["p"]
+            )[0]
+            p2 = list(
+                factor2.loc[
+                    (
+                        factor2[list(current_col_values2.to_dict())]
+                        == current_col_values2
+                    ).all(axis=1)
+                ]["p"]
+            )[0]
+            ps.append(p1 * p2)
+
+        merged["p"] = ps
+
+        return merged
