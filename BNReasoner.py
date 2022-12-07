@@ -121,7 +121,7 @@ class BNReasoner:
 
         return merged
 
-    def min_degree_ordering(self, variables: List[str]):
+    def min_degree_ordering(self, variables: List[str]) -> List[str]:
         interaction_graph = self.bn.get_interaction_graph()
         ordering = []
         while len(variables) > 0:
@@ -134,6 +134,7 @@ class BNReasoner:
                 if interaction_graph.degree(var) < min_degree:
                     min_degree = interaction_graph.degree(var)
                     min_degree_node = var
+
             variables.remove(min_degree_node)
             ordering.append(min_degree_node)
             # get neighbours of min_degree_node
@@ -145,7 +146,7 @@ class BNReasoner:
             interaction_graph.remove_node(min_degree_node)
         return ordering
 
-    def min_fill_ordering(self, variables: List[str]):
+    def min_fill_ordering(self, variables: List[str]) -> List[str]:
         interaction_graph = self.bn.get_interaction_graph()
         ordering = []
         while len(variables) > 0:
@@ -163,6 +164,7 @@ class BNReasoner:
                 if nr_of_interactions < min_fill:
                     min_fill = nr_of_interactions
                     min_fill_node = var
+
             variables.remove(min_fill_node)
             ordering.append(min_fill_node)
             # get neighbours of min_degree_node
@@ -197,3 +199,40 @@ class BNReasoner:
         cols.remove(variable)
         cols.remove("p")
         return factor.groupby(by=cols, as_index=False).sum().drop(columns=[variable])
+
+    def compute_marginal_distribution(
+        self, Q: List[str], evidence: Dict[str, bool]
+    ) -> pd.DataFrame:
+        """
+        Computes the marginal distribution of the variables in Q given the evidence.
+        """
+        self.prune_network(Q, evidence)
+
+        # reduce all cpts in network based on evidence
+        for cpt in self.bn.get_all_cpts().items():
+            new_cpt = self.bn.reduce_factor_rem_row(pd.Series(evidence), cpt[1])
+            self.bn.update_cpt(cpt[0], new_cpt)
+
+        print(self.bn.get_all_cpts())
+        ordering = self.min_degree_ordering(
+            [x for x in self.bn.get_all_variables() if x not in Q]
+        )
+        print(ordering)
+        curr_factor = 1
+        print(curr_factor)
+        for var in ordering:
+            factor = self.bn.get_cpt(var)
+            if isinstance(curr_factor, int):
+                curr_factor = factor
+            print(" ")
+            print(curr_factor)
+            for parent in self.bn.get_parents(var):
+                print(self.bn.get_cpt(parent))
+                curr_factor = self.multiply_factors(
+                    curr_factor, self.bn.get_cpt(parent)
+                )
+            print(" ")
+            print(curr_factor)
+            print(var)
+            curr_factor = self.variable_elimination(curr_factor, var)
+        return curr_factor
