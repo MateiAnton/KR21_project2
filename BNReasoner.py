@@ -186,9 +186,7 @@ class BNReasoner:
             factor.columns.drop(["p", var])
         )
 
-    def sum_p_and_eliminate_on_variable(
-        self, factor: pd.DataFrame, variable: str
-    ) -> pd.DataFrame:
+    def variable_elimination(self, factor: pd.DataFrame, variable: str) -> pd.DataFrame:
         """
         Sums out the variable in the factor and returns the resulting factor.
         """
