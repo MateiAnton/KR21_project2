@@ -149,8 +149,8 @@ class BNReasoner:
         interaction_graph = self.bn.get_interaction_graph()
         ordering = []
         while len(variables) > 0:
-            nx.draw(interaction_graph, with_labels=True, node_size=3000)
-            plt.show()
+            # nx.draw(interaction_graph, with_labels=True, node_size=3000)
+            # plt.show()
 
             min_fill = float("inf")
             for var in variables:
