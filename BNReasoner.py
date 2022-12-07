@@ -162,7 +162,7 @@ class BNReasoner:
             interaction_graph.remove_node(min_fill_node)
         return ordering
 
-    def _nr_of_new_interactions_after_deletion(self, node, interaction_graph):
+    def _nr_of_new_interactions_after_deletion(self, node, interaction_graph: nx.Graph):
         neighbours = list(interaction_graph.neighbors(node))
         nr_of_interactions = 0
         for i in range(len(neighbours)):
@@ -185,3 +185,15 @@ class BNReasoner:
         return factor.sort_values(by=["p"], ascending=False).drop_duplicates(
             factor.columns.drop(["p", var])
         )
+
+    def sum_p_and_eliminate_on_variable(
+        self, factor: pd.DataFrame, variable: str
+    ) -> pd.DataFrame:
+        """
+        Sums out the variable in the factor and returns the resulting factor.
+        """
+        cols = list(factor.columns)
+        cols.remove(variable)
+        cols.remove("p")
+        print(" ")
+        print(factor.groupby(by=cols, as_index=False).sum().drop(columns=[variable]))
