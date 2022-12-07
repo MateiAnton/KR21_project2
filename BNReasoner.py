@@ -193,5 +193,4 @@ class BNReasoner:
         cols = list(factor.columns)
         cols.remove(variable)
         cols.remove("p")
-        print(" ")
-        print(factor.groupby(by=cols, as_index=False).sum().drop(columns=[variable]))
+        return factor.groupby(by=cols, as_index=False).sum().drop(columns=[variable])
