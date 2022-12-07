@@ -170,3 +170,18 @@ class BNReasoner:
                 if not interaction_graph.has_edge(neighbours[i], neighbours[j]):
                     nr_of_interactions += 1
         return nr_of_interactions
+
+    def sum_out(self, var: str, factor: pd.DataFrame) -> pd.DataFrame:
+        """
+        Sums out a variable from a factor and returns the resulting factor.
+        """
+        df = factor.drop(columns=[var])
+        return df.groupby(df.columns.drop("p").tolist(), as_index=False).sum()
+
+    def max_out(self, var: str, factor: pd.DataFrame) -> pd.DataFrame:
+        """
+        Maxes out a variable from a factor and returns the resulting factor.
+        """
+        return factor.sort_values(by=["p"], ascending=False).drop_duplicates(
+            factor.columns.drop(["p", var])
+        )
