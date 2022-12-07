@@ -121,15 +121,20 @@ class BNReasoner:
 
         return merged
 
-    def min_degree_ordering(self):
+    def min_degree_ordering(self, variables: List[str]):
         interaction_graph = self.bn.get_interaction_graph()
         ordering = []
-        while len(interaction_graph.nodes()) > 0:
+        while len(variables) > 0:
             nx.draw(interaction_graph, with_labels=True, node_size=3000)
             plt.show()
-            min_degree_node = min(
-                interaction_graph.nodes(), key=interaction_graph.degree
-            )
+
+            # get min degree node from variables in interaction_graph
+            min_degree = float("inf")
+            for var in variables:
+                if interaction_graph.degree(var) < min_degree:
+                    min_degree = interaction_graph.degree(var)
+                    min_degree_node = var
+            variables.remove(min_degree_node)
             ordering.append(min_degree_node)
             # get neighbours of min_degree_node
             neighbours = list(interaction_graph.neighbors(min_degree_node))
@@ -140,18 +145,25 @@ class BNReasoner:
             interaction_graph.remove_node(min_degree_node)
         return ordering
 
-    def min_fill_ordering(self):
+    def min_fill_ordering(self, variables: List[str]):
         interaction_graph = self.bn.get_interaction_graph()
         ordering = []
-        while len(interaction_graph.nodes()) > 0:
-            # nx.draw(interaction_graph, with_labels=True, node_size=3000)
-            # plt.show()
-            min_fill_node = min(
-                interaction_graph.nodes(),
-                key=lambda node: self._nr_of_new_interactions_after_deletion(
-                    node, interaction_graph
-                ),
-            )
+        while len(variables) > 0:
+            nx.draw(interaction_graph, with_labels=True, node_size=3000)
+            plt.show()
+
+            min_fill = float("inf")
+            for var in variables:
+                neighbours = list((interaction_graph.neighbors(var)))
+                nr_of_interactions = 0
+                for i in range(len(neighbours)):
+                    for j in range(i + 1, len(neighbours)):
+                        if not interaction_graph.has_edge(neighbours[i], neighbours[j]):
+                            nr_of_interactions += 1
+                if nr_of_interactions < min_fill:
+                    min_fill = nr_of_interactions
+                    min_fill_node = var
+            variables.remove(min_fill_node)
             ordering.append(min_fill_node)
             # get neighbours of min_degree_node
             neighbours = list(interaction_graph.neighbors(min_fill_node))
@@ -161,15 +173,6 @@ class BNReasoner:
                     interaction_graph.add_edge(neighbours[i], neighbours[j])
             interaction_graph.remove_node(min_fill_node)
         return ordering
-
-    def _nr_of_new_interactions_after_deletion(self, node, interaction_graph: nx.Graph):
-        neighbours = list(interaction_graph.neighbors(node))
-        nr_of_interactions = 0
-        for i in range(len(neighbours)):
-            for j in range(i + 1, len(neighbours)):
-                if not interaction_graph.has_edge(neighbours[i], neighbours[j]):
-                    nr_of_interactions += 1
-        return nr_of_interactions
 
     def sum_out(self, var: str, factor: pd.DataFrame) -> pd.DataFrame:
         """
