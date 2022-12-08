@@ -1,3 +1,4 @@
+from ast import Tuple
 from typing import Union
 from BayesNet import BayesNet
 from typing import List, Dict
@@ -197,7 +198,7 @@ class BNReasoner:
             factor.columns.drop(["p", var])
         )
 
-    def variable_elimination(self, ordering: List[str]) -> pd.DataFrame:
+    def variable_elimination(self, ordering: List[str]) -> List[pd.DataFrame]:
         """
         Sums out the variable in the given ordering and returns the resulting factor.
         """
@@ -218,16 +219,7 @@ class BNReasoner:
                     self.multiply_factors(first_factor, second_factor),
                 )
             factors[var] = self.sum_out(var, factors_containing_var[0])
-
-        # multiply remaining factors
-        while len(factors) > 1:
-            first_factor = factors.popitem()
-            second_factor = factors.popitem()
-            factors[first_factor[0]] = self.multiply_factors(
-                first_factor[1], second_factor[1]
-            )
-
-        return factors.popitem()[1]
+        return [f for f in factors.values()]
 
     def compute_marginal_distribution(
         self, Q: List[str], evidence: Dict[str, bool]
@@ -245,10 +237,42 @@ class BNReasoner:
         ordering = self.min_degree_ordering(
             [x for x in self.bn.get_all_variables() if x not in Q]
         )
+        remaining_factors = self.variable_elimination(ordering)
+        # multiply remaining factors
+        for i in range(len(remaining_factors) - 1):
+            first_factor = remaining_factors.pop()
+            second_factor = remaining_factors.pop()
+            remaining_factors.append(self.multiply_factors(first_factor, second_factor))
 
-        joint_marginal = self.variable_elimination(ordering)
+        joint_marginal = remaining_factors[0]
 
         # normalize
         joint_marginal["p"] = joint_marginal["p"] / joint_marginal["p"].sum()
 
         return joint_marginal
+
+    def marginal_a_posteriori(self, Q: str, evidence: Dict[str, bool]):
+        self.prune_network(Q, evidence)
+
+        # reduce all cpts in network based on evidence
+        for cpt in self.bn.get_all_cpts().items():
+            new_cpt = self.bn.reduce_factor_rem_row(pd.Series(evidence), cpt[1])
+            self.bn.update_cpt(cpt[0], new_cpt)
+
+        ordering = self.min_degree_ordering(
+            [x for x in self.bn.get_all_variables() if x not in Q]
+        )
+        remaining_factors = self.variable_elimination(ordering)
+        # multiply remaining factors
+        for i in range(len(remaining_factors) - 1):
+            first_factor = remaining_factors.pop()
+            second_factor = remaining_factors.pop()
+            remaining_factors.append(self.multiply_factors(first_factor, second_factor))
+
+        joint_marginal = remaining_factors[0]
+        max_row = joint_marginal.loc[joint_marginal["p"].idxmax()]
+        probability = max_row["p"]
+        max_row = max_row.drop("p")
+        assignments = max_row.to_dict()
+
+        return probability, assignments
