@@ -89,9 +89,15 @@ class BNReasoner:
         """
         Multiplies two factors and returns the resulting factor.
         """
-        merged = pd.merge(
-            factor1.drop(columns=["p"]), factor2.drop(columns=["p"]), how="outer"
-        )
+        if len(set(factor1.columns).intersection(set(factor2.columns))) > 1:
+            merged = pd.merge(
+                factor1.drop(columns=["p"]), factor2.drop(columns=["p"]), how="outer"
+            )
+        else:
+            merged = pd.merge(
+                factor1.drop(columns=["p"]), factor2.drop(columns=["p"]), how="cross"
+            )
+
         columns1 = factor1.columns.values[:-1]
         columns2 = factor2.columns.values[:-1]
         ps = []
@@ -125,8 +131,8 @@ class BNReasoner:
         interaction_graph = self.bn.get_interaction_graph()
         ordering = []
         while len(variables) > 0:
-            nx.draw(interaction_graph, with_labels=True, node_size=3000)
-            plt.show()
+            # nx.draw(interaction_graph, with_labels=True, node_size=3000)
+            # plt.show()
 
             # get min degree node from variables in interaction_graph
             min_degree = float("inf")
@@ -191,14 +197,37 @@ class BNReasoner:
             factor.columns.drop(["p", var])
         )
 
-    def variable_elimination(self, factor: pd.DataFrame, variable: str) -> pd.DataFrame:
+    def variable_elimination(self, ordering: List[str]) -> pd.DataFrame:
         """
-        Sums out the variable in the factor and returns the resulting factor.
+        Sums out the variable in the given ordering and returns the resulting factor.
         """
-        cols = list(factor.columns)
-        cols.remove(variable)
-        cols.remove("p")
-        return factor.groupby(by=cols, as_index=False).sum().drop(columns=[variable])
+        factors = self.bn.get_all_cpts()
+        for var in ordering:
+            factors_containing_var = [f for f in factors.items() if var in f[1].columns]
+            # remove factors containing var
+            for f in factors_containing_var:
+                factors.pop(f[0])
+
+            factors_containing_var = [f[1] for f in factors_containing_var]
+
+            # multiply factors containing var
+            while len(factors_containing_var) > 1:
+                first_factor = factors_containing_var.pop()
+                second_factor = factors_containing_var.pop()
+                factors_containing_var.append(
+                    self.multiply_factors(first_factor, second_factor),
+                )
+            factors[var] = self.sum_out(var, factors_containing_var[0])
+
+        # multiply remaining factors
+        while len(factors) > 1:
+            first_factor = factors.popitem()
+            second_factor = factors.popitem()
+            factors[first_factor[0]] = self.multiply_factors(
+                first_factor[1], second_factor[1]
+            )
+
+        return factors.popitem()[1]
 
     def compute_marginal_distribution(
         self, Q: List[str], evidence: Dict[str, bool]
@@ -213,26 +242,13 @@ class BNReasoner:
             new_cpt = self.bn.reduce_factor_rem_row(pd.Series(evidence), cpt[1])
             self.bn.update_cpt(cpt[0], new_cpt)
 
-        print(self.bn.get_all_cpts())
         ordering = self.min_degree_ordering(
             [x for x in self.bn.get_all_variables() if x not in Q]
         )
-        print(ordering)
-        curr_factor = 1
-        print(curr_factor)
-        for var in ordering:
-            factor = self.bn.get_cpt(var)
-            if isinstance(curr_factor, int):
-                curr_factor = factor
-            print(" ")
-            print(curr_factor)
-            for parent in self.bn.get_parents(var):
-                print(self.bn.get_cpt(parent))
-                curr_factor = self.multiply_factors(
-                    curr_factor, self.bn.get_cpt(parent)
-                )
-            print(" ")
-            print(curr_factor)
-            print(var)
-            curr_factor = self.variable_elimination(curr_factor, var)
-        return curr_factor
+
+        joint_marginal = self.variable_elimination(ordering)
+
+        # normalize
+        joint_marginal["p"] = joint_marginal["p"] / joint_marginal["p"].sum()
+
+        return joint_marginal
