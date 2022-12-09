@@ -194,9 +194,12 @@ class BNReasoner:
         """
         Maxes out a variable from a factor and returns the resulting factor.
         """
-        return factor.sort_values(by=["p"], ascending=False).drop_duplicates(
-            factor.columns.drop(["p", var])
-        )
+        columns_left = len(factor.columns.drop(["p", var]))
+        if columns_left > 0:
+            sorted_df = factor.sort_values(by=["p"], ascending=False)
+            return sorted_df.drop_duplicates(factor.columns.drop(["p", var]))
+        else:
+            return factor
 
     def variable_elimination(self, ordering: List[str]) -> List[pd.DataFrame]:
         """
