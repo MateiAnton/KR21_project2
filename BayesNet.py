@@ -9,9 +9,13 @@ from copy import deepcopy
 
 
 class BayesNet:
-    def __init__(self) -> None:
+    def __init__(self, structure=None, path=None) -> None:
         # initialize graph structure
         self.structure = nx.DiGraph()
+        if structure is not None:
+            self.structure = structure
+        if path is not None:
+            self.load_from_bifxml(path)
 
     # LOADING FUNCTIONS ------------------------------------------------------------------------------------------------
     def create_bn(
