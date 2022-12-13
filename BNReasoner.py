@@ -91,6 +91,7 @@ class BNReasoner:
         """
         Multiplies two factors and returns the resulting factor.
         """
+
         if len(set(factor1.columns).intersection(set(factor2.columns))) > 1:
             merged = pd.merge(
                 factor1.drop(columns=["p"]), factor2.drop(columns=["p"]), how="outer"
@@ -99,6 +100,8 @@ class BNReasoner:
             merged = pd.merge(
                 factor1.drop(columns=["p"]), factor2.drop(columns=["p"]), how="cross"
             )
+        # delete all rows with NaN
+        merged = merged.dropna()
 
         columns1 = factor1.columns.values[:-1]
         columns2 = factor2.columns.values[:-1]
@@ -106,7 +109,6 @@ class BNReasoner:
         for _, row in merged.iterrows():
             current_col_values1 = row[columns1]
             current_col_values2 = row[columns2]
-
             p1 = list(
                 factor1.loc[
                     (
@@ -315,7 +317,7 @@ class BNReasoner:
             var2 = variables_left.pop()
             factor2 = self.bn.get_cpt(var2)
             factor = self.multiply_factors(factor, factor2)
-        factor = self.max_out(list(factor.columns.drop(["p"])), factor)
+            factor = self.max_out(list(factor.columns.drop(["p"])), factor)
 
         return factor["p"].values[0], factor.drop("p", axis=1).to_dict("records")[0]
 
