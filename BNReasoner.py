@@ -191,7 +191,10 @@ class BNReasoner:
         Sums out a variable from a factor and returns the resulting factor.
         """
         df = factor.drop(columns=vars)
-        return df.groupby(df.columns.drop("p").tolist(), as_index=False).sum()
+        if len(df.columns) > 1:
+            return df.groupby(df.columns.drop("p").tolist(), as_index=False).sum()
+        else:
+            return df
 
     def max_out(self, vars: List[str], factor: pd.DataFrame) -> pd.DataFrame:
         """
