@@ -207,7 +207,9 @@ class BNReasoner:
             sorted_df = sorted_df.iloc[:1]
         return sorted_df
 
-    def variable_elimination(self, ordering: List[str]) -> List[pd.DataFrame]:
+    def variable_elimination(
+        self, ordering: List[str], max_out=False
+    ) -> List[pd.DataFrame]:
         """
         Sums out the variable in the given ordering and returns the resulting factor.
         """
@@ -227,7 +229,10 @@ class BNReasoner:
                 factors_containing_var.append(
                     self.multiply_factors(first_factor, second_factor),
                 )
-            factors[var] = self.sum_out([var], factors_containing_var[0])
+            if max_out:
+                factors[var] = self.max_out([var], factors_containing_var[0])
+            else:
+                factors[var] = self.sum_out([var], factors_containing_var[0])
         return [f for f in factors.values()]
 
     def compute_marginal_distribution(
@@ -312,15 +317,16 @@ class BNReasoner:
             )
             self.bn.update_cpt(cpt[0], new_cpt)
 
-        # multiply and max out all factors
-        variables_left = set(variables)
-        var = variables_left.pop()
-        factor = self.bn.get_cpt(var)
-        while len(variables_left) > 0:
-            var2 = variables_left.pop()
-            factor2 = self.bn.get_cpt(var2)
-            factor = self.multiply_factors(factor, factor2)
-            factor = self.max_out(list(factor.columns.drop(["p"])), factor)
+        ordering = self.min_degree_ordering(variables.copy())
+
+        remaining_factors = self.variable_elimination(ordering, max_out=True)
+        # multiply remaining factors
+        while len(remaining_factors) > 1:
+            first_factor = remaining_factors.pop()
+            second_factor = remaining_factors.pop()
+            remaining_factors.append(self.multiply_factors(first_factor, second_factor))
+
+        factor = remaining_factors[0]
 
         return factor["p"].values[0], factor.drop("p", axis=1).to_dict("records")[0]
 
