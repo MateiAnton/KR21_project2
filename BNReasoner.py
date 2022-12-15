@@ -165,12 +165,9 @@ class BNReasoner:
 
             min_fill = float("inf")
             for var in variables:
-                neighbours = list((interaction_graph.neighbors(var)))
-                nr_of_interactions = 0
-                for i in range(len(neighbours)):
-                    for j in range(i + 1, len(neighbours)):
-                        if not interaction_graph.has_edge(neighbours[i], neighbours[j]):
-                            nr_of_interactions += 1
+                nr_of_interactions = self._nr_of_edges_that_a_variable_would_remove(
+                    var, interaction_graph
+                )
                 if nr_of_interactions < min_fill:
                     min_fill = nr_of_interactions
                     min_fill_node = var
@@ -185,6 +182,17 @@ class BNReasoner:
                     interaction_graph.add_edge(neighbours[i], neighbours[j])
             interaction_graph.remove_node(min_fill_node)
         return ordering
+
+    def _nr_of_edges_that_a_variable_would_remove(
+        self, variable: str, interaction_graph: nx.DiGraph
+    ) -> str:
+        neighbours = list((interaction_graph.neighbors(variable)))
+        nr_of_interactions = 0
+        for i in range(len(neighbours)):
+            for j in range(i + 1, len(neighbours)):
+                if not interaction_graph.has_edge(neighbours[i], neighbours[j]):
+                    nr_of_interactions += 1
+        return nr_of_interactions
 
     def sum_out(self, vars: List[str], factor: pd.DataFrame) -> pd.DataFrame:
         """
@@ -201,7 +209,7 @@ class BNReasoner:
         Maxes out variables from a factor and returns the resulting extended factor.
         """
         sorted_df = factor.sort_values(by=["p"], ascending=False)
-        if len(factor.columns.drop(["p"] + vars)) > 1:
+        if len(factor.columns.drop(["p"] + vars)) > 0:
             sorted_df = sorted_df.drop_duplicates(factor.columns.drop(["p"] + vars))
         else:
             sorted_df = sorted_df.iloc[:1]
