@@ -136,9 +136,40 @@ def test_variable_elimination():
 def test_compute_marginal_distribution():
     pass
     # TODO
-    # bn = BayesNet(path=IJXYO)
-    # reasoner = BNReasoner(bn)
-    # end_factor = reasoner.compute_marginal_distribution(["I", "J"], {})
+    bn = BayesNet(path=IJXYO)
+    reasoner = BNReasoner(bn)
+    end_factor = reasoner.compute_marginal_distribution(["O", "X"], {"J": True})
+    assert len(end_factor.columns) == 3
+    # assert probabilities sum to 1
+    assert approximately_equal(end_factor["p"].sum(), 1)
+    # assert correct values for P(O=True, X=True)
+    assert approximately_equal(
+        end_factor.loc[(end_factor["O"] == True) & (end_factor["X"] == True)][
+            "p"
+        ].item(),
+        0.49,
+    )
+    # assert correct values for P(O=True, X=False)
+    assert approximately_equal(
+        end_factor.loc[(end_factor["O"] == True) & (end_factor["X"] == False)][
+            "p"
+        ].item(),
+        0.0148,
+    )
+    # assert correct values for P(O=False, X=True)
+    assert approximately_equal(
+        end_factor.loc[(end_factor["O"] == False) & (end_factor["X"] == True)][
+            "p"
+        ].item(),
+        0.01,
+    )
+    # assert correct values for P(O=False, X=False)
+    assert approximately_equal(
+        end_factor.loc[(end_factor["O"] == False) & (end_factor["X"] == False)][
+            "p"
+        ].item(),
+        0.4852,
+    )
 
 
 def test_maximum_a_posteriori():
