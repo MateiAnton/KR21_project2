@@ -4,14 +4,14 @@ import pandas as pd
 from BayesNet import BayesNet
 
 
-def build_network(depth=3, width=2) -> BayesNet:
+def build_network(depth=3, width=2, edges=(1, 2)) -> BayesNet:
     bn = BayesNet()
 
     for i in range(depth):
         for j in range(width):
             node_name = f"{i}_{j}"
             if i > 0:
-                n_edges = np.random.randint(1, width + 1)
+                n_edges = np.random.randint(edges[0], edges[1] + 1)
                 parents = np.random.choice(range(width), size=n_edges, replace=False)
 
                 cpt = pd.DataFrame()

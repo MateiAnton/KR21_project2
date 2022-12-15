@@ -299,7 +299,7 @@ class BNReasoner:
 
         return probability, assignments
 
-    def most_probable_explanation(self, evidence: Dict[str, bool]):
+    def most_probable_explanation(self, evidence: Dict[str, bool], naive=False):
         """
         Returns the most probable explanation for the given evidence.
         """
@@ -325,16 +325,25 @@ class BNReasoner:
             )
             self.bn.update_cpt(cpt[0], new_cpt)
 
-        ordering = self.min_degree_ordering(variables.copy())
-
-        remaining_factors = self.variable_elimination(ordering, max_out=True)
-        # multiply remaining factors
-        while len(remaining_factors) > 1:
-            first_factor = remaining_factors.pop()
-            second_factor = remaining_factors.pop()
-            remaining_factors.append(self.multiply_factors(first_factor, second_factor))
-
-        factor = remaining_factors[0]
+        if naive:
+            variables_left = set(variables)
+            var = variables_left.pop()
+            factor = self.bn.get_cpt(var)
+            while len(variables_left) > 0:
+                var2 = variables_left.pop()
+                factor2 = self.bn.get_cpt(var2)
+                factor = self.multiply_factors(factor, factor2)
+            factor = self.max_out(list(factor.columns.drop(["p"])), factor)
+        else:
+            ordering = self.min_degree_ordering(variables.copy())
+            remaining_factors = self.variable_elimination(ordering, max_out=True)
+            while len(remaining_factors) > 1:
+                first_factor = remaining_factors.pop()
+                second_factor = remaining_factors.pop()
+                remaining_factors.append(
+                    self.multiply_factors(first_factor, second_factor)
+                )
+            factor = remaining_factors[0]
 
         return factor["p"].values[0], factor.drop("p", axis=1).to_dict("records")[0]
 
