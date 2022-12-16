@@ -11,6 +11,18 @@ def approximately_equal(a, b, epsilon=0.0001):
     return abs(a - b) < epsilon
 
 
+def test_d_separated():
+    bn = BayesNet(path=IJXYO)
+    reasoner = BNReasoner(bn)
+    assert not reasoner.d_separated(["I"], ["J"], ["X"])
+
+
+def test_independent():
+    bn = BayesNet(path=IJXYO)
+    reasoner = BNReasoner(bn)
+    assert not reasoner.independent(["I"], ["J"], ["X"])
+
+
 def test_prune_network():
     bn = BayesNet(path=IJXYO)
     reasoner = BNReasoner(bn)
@@ -202,3 +214,5 @@ test_variable_elimination()
 test_compute_marginal_distribution()
 test_maximum_a_posteriori()
 test_most_probable_explanation()
+test_d_separated()
+test_independent()

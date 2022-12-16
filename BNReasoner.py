@@ -73,7 +73,7 @@ class BNReasoner:
                 graph.remove_node(leaf)
 
         for node in Z:
-            for child in self.bn.get_children(node):
+            for child in graph.successors(node):
                 graph.remove_edge(node, child)
 
         subgraphs = nx.weakly_connected_components(graph)
@@ -84,6 +84,12 @@ class BNReasoner:
             ):
                 return False
         return True
+
+    def independent(self, X, Y, Z):
+        """
+        Checks if X and Y are independent given Z.
+        """
+        return self.d_separated(X, Y, Z)
 
     def multiply_factors(
         self, factor1: pd.DataFrame, factor2: pd.DataFrame
