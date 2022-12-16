@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+
+<!--
+	This BIFXML file contains the conditional probability tables of the use-case
+	of Group 22 for the second assignment of the course Knowledge Representation.
+-->
+
+
+
+<!-- DTD for the XMLBIF 0.3 format -->
+<!DOCTYPE BIF [
+	<!ELEMENT BIF ( NETWORK )*>
+	      <!ATTLIST BIF VERSION CDATA #REQUIRED>
+	<!ELEMENT NETWORK ( NAME, ( PROPERTY | VARIABLE | DEFINITION )* )>
+	<!ELEMENT NAME (#PCDATA)>
+	<!ELEMENT VARIABLE ( NAME, ( OUTCOME |  PROPERTY )* ) >
+	      <!ATTLIST VARIABLE TYPE (nature|decision|utility) "nature">
+	<!ELEMENT OUTCOME (#PCDATA)>
+	<!ELEMENT DEFINITION ( FOR | GIVEN | TABLE | PROPERTY )* >
+	<!ELEMENT FOR (#PCDATA)>
+	<!ELEMENT GIVEN (#PCDATA)>
+	<!ELEMENT TABLE (#PCDATA)>
+	<!ELEMENT PROPERTY (#PCDATA)>
+]>
+
+
+<BIF VERSION="0.3">
+<NETWORK>
+	<NAME>Videogame_level</NAME>
+
+	<!-- Variables -->
+	<VARIABLE TYPE="nature">
+		<NAME>Regular_player</NAME>
+		<OUTCOME>high</OUTCOME>
+		<OUTCOME>low</OUTCOME>
+	</VARIABLE>
+	<VARIABLE TYPE="nature">
+		<NAME>Good_stats</NAME>
+		<OUTCOME>true</OUTCOME>
+		<OUTCOME>false</OUTCOME>
+	</VARIABLE>
+	<VARIABLE TYPE="nature">
+		<NAME>General_skills</NAME>
+		<OUTCOME>true</OUTCOME>
+		<OUTCOME>false</OUTCOME>
+	</VARIABLE>
+	<VARIABLE TYPE="nature">
+		<NAME>Multiple_specific_skills</NAME>
+		<OUTCOME>true</OUTCOME>
+		<OUTCOME>false</OUTCOME>
+	</VARIABLE>
+	<VARIABLE TYPE="nature">
+		<NAME>Level_difficulty</NAME>
+		<OUTCOME>hard</OUTCOME>
+		<OUTCOME>easy</OUTCOME>
+	</VARIABLE>
+	<VARIABLE TYPE="nature">
+		<NAME>Skill_specific_enemies</NAME>
+		<OUTCOME>true</OUTCOME>
+		<OUTCOME>false</OUTCOME>
+	</VARIABLE>
+	<VARIABLE TYPE="nature">
+		<NAME>Difficult_enemies</NAME>
+		<OUTCOME>true</OUTCOME>
+		<OUTCOME>false</OUTCOME>
+	</VARIABLE>
+	<VARIABLE TYPE="nature">
+		<NAME>Non-combat_related_obstacles</NAME>
+		<OUTCOME>true</OUTCOME>
+		<OUTCOME>false</OUTCOME>
+	</VARIABLE>
+	<VARIABLE TYPE="nature">
+		<NAME>Player_skills_match_enemies</NAME>
+		<OUTCOME>true</OUTCOME>
+		<OUTCOME>false</OUTCOME>
+	</VARIABLE>
+	<VARIABLE TYPE="nature">
+		<NAME>Player_beats_enemies</NAME>
+		<OUTCOME>true</OUTCOME>
+		<OUTCOME>false</OUTCOME>
+	</VARIABLE>
+	<VARIABLE TYPE="nature">
+		<NAME>Player_beats_level</NAME>
+		<OUTCOME>true</OUTCOME>
+		<OUTCOME>false</OUTCOME>
+	</VARIABLE>
+
+
+<!-- Probability distributions -->
+<!-- 
+    Regular_player
+    Good_stats/equipment
+    General_skills
+    Player_trained_specific_skill
+    Player_trained_multiple_skills
+    Level_difficulty
+    Skill_specific_enemies
+    Difficult_enemies
+    Non-combat_related_obstacles
+    Player_skills_match_enemies
+    Player_beats_enemies
+    Player_beats_level
+ -->
+
+<!-- 
+    False True
+    FF TF FT TT
+    FFF TFF FFT TFT FTF TTF FTT TTT
+-->
+
+	<DEFINITION>
+		<FOR>Regular_player</FOR>
+		<TABLE>0.5 0.5</TABLE>
+	</DEFINITION>
+	<DEFINITION>
+		<FOR>Good_stats</FOR>
+		<GIVEN>Regular_player</GIVEN>
+		<TABLE>1 0 0.3 0.7</TABLE>
+	</DEFINITION>
+	<DEFINITION>
+		<FOR>General_skills</FOR>
+		<GIVEN>Regular_player</GIVEN>
+		<TABLE>0.8 0.2 0.5 0.5</TABLE>
+	</DEFINITION>
+	<DEFINITION>
+		<FOR>Multiple_specific_skills</FOR>
+		<GIVEN>Regular_player</GIVEN>
+		<TABLE>1 0 0.5 0.5</TABLE>
+	</DEFINITION>
+	<DEFINITION>
+		<FOR>Skill_specific_enemies</FOR>
+		<TABLE>0.85 0.15</TABLE>
+	</DEFINITION>
+	<DEFINITION>
+		<FOR>Player_skills_match_enemies</FOR>
+		<GIVEN>Skill_specific_enemies</GIVEN>
+		<GIVEN>Multiple_specific_skills</GIVEN>
+		<TABLE>0 1 0.8 0.2 0 1 0.3 0.7</TABLE>
+	</DEFINITION>
+	<DEFINITION>
+		<FOR>Level_difficulty</FOR>
+		<TABLE>0.5 0.5</TABLE>
+	</DEFINITION>
+	<DEFINITION>
+		<FOR>Difficult_enemies</FOR>
+		<GIVEN>Level_difficulty</GIVEN>
+		<TABLE>1 0 0.2 0.8</TABLE>
+	</DEFINITION>
+	<DEFINITION>
+		<FOR>Non-combat_related_obstacles</FOR>
+		<GIVEN>Difficult_enemies</GIVEN>
+		<GIVEN>Level_difficulty</GIVEN>
+		<TABLE>1 0 1 0 0 1 0.75 0.25</TABLE>
+	</DEFINITION>
+	<!-- 
+		False True
+		FF TF FT TT
+		FFF TFF FFT TFT FTF TTF FTT TTT
+		FFFF FTFF FFFT FTFT FFTF FTTF FFTT FTTT
+		TFFF TTFF TFFT TTFT TFTF TTTF TFTT TTTT
+
+		XXXXXXX
+		FFFFF FFFFT 
+
+		FFFTF FFFTT FFTFF FFTFT FTFFF FTFFT TFFFF TFFFT
+
+		FFTTF FFTTT FTFTF FTFTT TFFTF TFFTT
+		FTTFF FTTFT TFTFF TFTFT
+		TTFFF TTFFT
+
+		FTTTF FTTTT TFTTF TFTTT TTFTF TTFTT TTTFF TTTFT
+
+		TTTTF TTTTT
+	-->
+	<DEFINITION>
+		<FOR>Player_beats_enemies</FOR>
+		<GIVEN>Difficult_enemies</GIVEN>
+		<GIVEN>Player_skills_match_enemies</GIVEN>
+		<GIVEN>General_skills</GIVEN>
+		<GIVEN>Good_stats</GIVEN>
+		<TABLE>0.6 0.4 0.999 0.001 0.25 0.75 0.99 0.01 0.1 0.9 0.7 0.3 0.02 0.98 0.2 0.8 0.3 0.7 0.9 0.1 0.05 0.95 0.5 0.5 0.01 0.99 0.3 0.7 0.001 0.999 0.15 0.85</TABLE>
+	</DEFINITION>
+	<DEFINITION>
+		<FOR>Player_beats_level</FOR>
+		<GIVEN>Non-combat_related_obstacles</GIVEN>
+		<GIVEN>Player_beats_enemies</GIVEN>
+		<GIVEN>General_skills</GIVEN>
+		<TABLE>1 0 1 0 0 1 0.75 0.25 1 0 1 0 0 1 0.1 0.9</TABLE>
+	</DEFINITION>
+</NETWORK>
+</BIF>
